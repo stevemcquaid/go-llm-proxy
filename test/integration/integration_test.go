@@ -1,4 +1,4 @@
-package llmproxy_test
+package llmproxy_integration_test
 
 import (
 	"bytes"
@@ -421,15 +421,15 @@ func TestBackendIntegration(t *testing.T) {
 
 // createTestProxy creates a test proxy with mock backends
 func createTestProxy() *proxy.ProxyServerV2 {
-	// Create model registry
-	modelRegistry := models.NewModelRegistry()
-
 	// Create backend manager with mock backends
 	backendManager := backend.NewBackendManager()
 	mockOpenAI := &MockBackend{name: "openai", available: true}
 	mockAnthropic := &MockBackend{name: "anthropic", available: true}
 	backendManager.RegisterBackend(types.BackendOpenAI, mockOpenAI)
 	backendManager.RegisterBackend(types.BackendAnthropic, mockAnthropic)
+
+	// Create model registry with available backends
+	modelRegistry := models.NewModelRegistryWithBackends(backendManager)
 
 	// Create streaming handler
 	streamingHandler := streaming.NewStreamingHandler(backendManager, modelRegistry)

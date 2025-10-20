@@ -27,14 +27,19 @@ func NewOpenAIBackend(apiKey string) *OpenAIBackend {
 // Generate handles text generation requests
 func (ob *OpenAIBackend) Generate(ctx context.Context, req types.GenerateRequest) (*types.GenerateResponse, error) {
 	openaiReq := openai.ChatCompletionRequest{
-		Model:     req.Model,
-		MaxTokens: req.MaxTokens,
+		Model: req.Model,
 		Messages: []openai.ChatCompletionMessage{
 			{
 				Role:    openai.ChatMessageRoleUser,
 				Content: req.Prompt,
 			},
 		},
+	}
+
+	// Only set MaxTokens for models that support it
+	// Newer models like GPT-4o use MaxCompletionTokens instead
+	if req.MaxTokens > 0 && !isNewerModel(req.Model) {
+		openaiReq.MaxTokens = req.MaxTokens
 	}
 
 	resp, err := ob.client.CreateChatCompletion(ctx, openaiReq)
@@ -60,9 +65,14 @@ func (ob *OpenAIBackend) Chat(ctx context.Context, req types.ChatRequest) (*type
 	}
 
 	openaiReq := openai.ChatCompletionRequest{
-		Model:     req.Model,
-		MaxTokens: req.MaxTokens,
-		Messages:  messages,
+		Model:    req.Model,
+		Messages: messages,
+	}
+
+	// Only set MaxTokens for models that support it
+	// Newer models like GPT-4o use MaxCompletionTokens instead
+	if req.MaxTokens > 0 && !isNewerModel(req.Model) {
+		openaiReq.MaxTokens = req.MaxTokens
 	}
 
 	resp, err := ob.client.CreateChatCompletion(ctx, openaiReq)
@@ -88,4 +98,23 @@ func (ob *OpenAIBackend) IsAvailable() bool {
 // GetName returns the backend name
 func (ob *OpenAIBackend) GetName() string {
 	return "openai"
+}
+
+// isNewerModel checks if the model is a newer model that doesn't support MaxTokens
+func isNewerModel(model string) bool {
+	// Models that require MaxCompletionTokens instead of MaxTokens
+	newerModels := []string{
+		"gpt-4o",
+		"gpt-4o-mini",
+		"gpt-5",
+		"gpt-4.1",
+		"gpt-4.5",
+	}
+
+	for _, newerModel := range newerModels {
+		if model == newerModel {
+			return true
+		}
+	}
+	return false
 }

@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"context"
+	"fmt"
 
 	"go-llm-proxy/internal/backend"
 	"go-llm-proxy/internal/config"
@@ -25,12 +26,12 @@ func NewProxyServerV2() *ProxyServerV2 {
 	// Load configuration
 	cfg := config.LoadConfig()
 
-	// Create model registry
-	modelRegistry := models.NewModelRegistry()
-
-	// Create backend factory and manager
+	// Create backend factory and manager first
 	backendFactory := backend.NewBackendFactory(cfg.AnthropicAPIKey, cfg.OpenAIAPIKey)
 	backendManager := backendFactory.CreateBackends()
+
+	// Create model registry with only available backends
+	modelRegistry := models.NewModelRegistryWithBackends(backendManager)
 
 	// Create streaming handler
 	streamingHandler := streaming.NewStreamingHandler(backendManager, modelRegistry)
@@ -72,6 +73,8 @@ func (p *ProxyServerV2) HandleGenerate(c *gin.Context) {
 	ctx := context.Background()
 	resp, err := p.BackendManager.ProcessRequest(ctx, modelConfig, generateReq)
 	if err != nil {
+		// Log the error for debugging
+		fmt.Printf("Error processing generate request: %v\n", err)
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
@@ -116,6 +119,8 @@ func (p *ProxyServerV2) HandleChat(c *gin.Context) {
 	ctx := context.Background()
 	resp, err := p.BackendManager.ProcessRequest(ctx, modelConfig, chatReq)
 	if err != nil {
+		// Log the error for debugging
+		fmt.Printf("Error processing chat request: %v\n", err)
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}

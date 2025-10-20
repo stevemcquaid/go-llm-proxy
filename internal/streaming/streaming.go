@@ -3,6 +3,7 @@ package streaming
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"go-llm-proxy/internal/backend"
@@ -36,7 +37,18 @@ func (sh *StreamingHandler) HandleStreamingChat(c *gin.Context, req types.Ollama
 	// Get model configuration
 	modelConfig, exists := sh.modelRegistry.GetModel(req.Model)
 	if !exists {
-		c.JSON(500, gin.H{"error": "model not found"})
+		// For streaming responses, we need to return an error in streaming format
+		errorResp := types.OllamaChatResponse{
+			Model:     req.Model,
+			CreatedAt: fmt.Sprintf("%d", time.Now().Unix()),
+			Message: types.OllamaMessage{
+				Role:    "assistant",
+				Content: "Error: model not found",
+			},
+			Done:    true,
+			Context: []int{},
+		}
+		sh.streamResponse(c, errorResp)
 		return
 	}
 
@@ -48,7 +60,20 @@ func (sh *StreamingHandler) HandleStreamingChat(c *gin.Context, req types.Ollama
 	ctx := context.Background()
 	resp, err := sh.backendManager.ProcessRequest(ctx, modelConfig, chatReq)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		// Log the error for debugging
+		fmt.Printf("Error processing streaming chat request: %v\n", err)
+		// For streaming responses, we need to return an error in streaming format
+		errorResp := types.OllamaChatResponse{
+			Model:     req.Model,
+			CreatedAt: fmt.Sprintf("%d", time.Now().Unix()),
+			Message: types.OllamaMessage{
+				Role:    "assistant",
+				Content: fmt.Sprintf("Error: %s", err.Error()),
+			},
+			Done:    true,
+			Context: []int{},
+		}
+		sh.streamResponse(c, errorResp)
 		return
 	}
 
@@ -73,7 +98,15 @@ func (sh *StreamingHandler) HandleStreamingGenerate(c *gin.Context, req types.Ol
 	// Get model configuration
 	modelConfig, exists := sh.modelRegistry.GetModel(req.Model)
 	if !exists {
-		c.JSON(500, gin.H{"error": "model not found"})
+		// For streaming responses, we need to return an error in streaming format
+		errorResp := types.OllamaGenerateResponse{
+			Model:     req.Model,
+			CreatedAt: fmt.Sprintf("%d", time.Now().Unix()),
+			Response:  "Error: model not found",
+			Done:      true,
+			Context:   []int{},
+		}
+		sh.streamResponse(c, errorResp)
 		return
 	}
 
@@ -85,13 +118,31 @@ func (sh *StreamingHandler) HandleStreamingGenerate(c *gin.Context, req types.Ol
 	ctx := context.Background()
 	resp, err := sh.backendManager.ProcessRequest(ctx, modelConfig, generateReq)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		// Log the error for debugging
+		fmt.Printf("Error processing streaming generate request: %v\n", err)
+		// For streaming responses, we need to return an error in streaming format
+		errorResp := types.OllamaGenerateResponse{
+			Model:     req.Model,
+			CreatedAt: fmt.Sprintf("%d", time.Now().Unix()),
+			Response:  fmt.Sprintf("Error: %s", err.Error()),
+			Done:      true,
+			Context:   []int{},
+		}
+		sh.streamResponse(c, errorResp)
 		return
 	}
 
 	generateResp, ok := resp.(*types.GenerateResponse)
 	if !ok {
-		c.JSON(500, gin.H{"error": "invalid response type"})
+		// For streaming responses, we need to return an error in streaming format
+		errorResp := types.OllamaGenerateResponse{
+			Model:     req.Model,
+			CreatedAt: fmt.Sprintf("%d", time.Now().Unix()),
+			Response:  "Error: invalid response type",
+			Done:      true,
+			Context:   []int{},
+		}
+		sh.streamResponse(c, errorResp)
 		return
 	}
 

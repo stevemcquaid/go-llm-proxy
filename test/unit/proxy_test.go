@@ -1,4 +1,4 @@
-package llmproxy_test
+package llmproxy_unit_test
 
 import (
 	"testing"
@@ -36,8 +36,8 @@ func TestModelRegistryDefaultModels(t *testing.T) {
 	_, exists := registry.GetModel("gpt-4o")
 	assert.True(t, exists, "Should have gpt-4o model")
 
-	_, exists = registry.GetModel("claude-3.5-sonnet")
-	assert.True(t, exists, "Should have claude-3.5-sonnet model")
+	_, exists = registry.GetModel("claude-4.5-sonnet")
+	assert.True(t, exists, "Should have claude-4.5-sonnet model")
 }
 
 // Note: Comprehensive tests are in separate files:

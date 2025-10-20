@@ -1,4 +1,4 @@
-package llmproxy_test
+package llmproxy_unit_test
 
 import (
 	"context"
