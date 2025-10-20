@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sashabaranov/go-openai"
@@ -236,6 +237,13 @@ func (p *ProxyServer) HandleGenerate(c *gin.Context) {
 	// Get model information and determine backend
 	modelInfo := p.getModelInfo(req.Model)
 
+	// Check if streaming is requested
+	if req.Stream {
+		// For generate, we'll just return an error for now since it's less commonly used
+		c.JSON(500, gin.H{"error": "streaming is not supported with this method, please use CreateChatCompletionStream"})
+		return
+	}
+
 	// Convert to appropriate backend format and make request
 	var response OllamaGenerateResponse
 	var err error
@@ -268,6 +276,12 @@ func (p *ProxyServer) HandleChat(c *gin.Context) {
 
 	// Get model information and determine backend
 	modelInfo := p.getModelInfo(req.Model)
+
+	// Check if streaming is requested
+	if req.Stream {
+		p.handleStreamingChat(c, req, modelInfo)
+		return
+	}
 
 	// Convert to appropriate backend format and make request
 	var response OllamaChatResponse
@@ -653,4 +667,69 @@ func convertToOpenAIMessages(messages []OpenAIMessage) []openai.ChatCompletionMe
 		}
 	}
 	return openaiMessages
+}
+
+// handleStreamingChat handles streaming chat requests
+func (p *ProxyServer) handleStreamingChat(c *gin.Context, req OllamaChatRequest, modelInfo ModelInfo) {
+	// Set headers for streaming
+	c.Header("Content-Type", "application/x-ndjson")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+
+	// Create a non-streaming request for the backend
+	nonStreamReq := req
+	nonStreamReq.Stream = false
+
+	// Get the non-streaming response first
+	var response OllamaChatResponse
+	var err error
+
+	switch modelInfo.Backend {
+	case BackendAnthropic:
+		response, err = p.handleAnthropicChat(nonStreamReq, modelInfo.Model)
+	case BackendOpenAI:
+		response, err = p.handleOpenAIChat(nonStreamReq, modelInfo.Model)
+	default:
+		c.JSON(500, gin.H{"error": "unsupported backend"})
+		return
+	}
+
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Simulate streaming by breaking the response into chunks
+	content := response.Message.Content
+	chunkSize := 3 // Small chunks for demonstration
+
+	for i := 0; i < len(content); i += chunkSize {
+		end := i + chunkSize
+		if end > len(content) {
+			end = len(content)
+		}
+
+		chunk := content[i:end]
+		done := end >= len(content)
+
+		streamResponse := OllamaChatResponse{
+			Model:     response.Model,
+			CreatedAt: response.CreatedAt,
+			Message: OllamaMessage{
+				Role:    "assistant",
+				Content: chunk,
+			},
+			Done:    done,
+			Context: response.Context,
+		}
+
+		// Write the chunk as JSON
+		jsonData, _ := json.Marshal(streamResponse)
+		c.Writer.Write(jsonData)
+		c.Writer.WriteString("\n")
+		c.Writer.Flush()
+
+		// Small delay to simulate streaming
+		time.Sleep(50 * time.Millisecond)
+	}
 }
