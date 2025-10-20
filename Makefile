@@ -2,7 +2,7 @@
 
 # Build the application
 build:
-	go build -o llm-proxy .
+	go build -o bin/llm-proxy .
 
 # Run the application
 run:
@@ -23,13 +23,13 @@ test:
 
 # Build for different platforms
 build-linux:
-	GOOS=linux GOARCH=amd64 go build -o llm-proxy-linux .
+	GOOS=linux GOARCH=amd64 go build -o bin/llm-proxy-linux .
 
 build-windows:
-	GOOS=windows GOARCH=amd64 go build -o llm-proxy-windows.exe .
+	GOOS=windows GOARCH=amd64 go build -o bin/llm-proxy-windows.exe .
 
 build-macos:
-	GOOS=darwin GOARCH=amd64 go build -o llm-proxy-macos .
+	GOOS=darwin GOARCH=amd64 go build -o bin/llm-proxy-macos .
 
 # Build all platforms
 build-all: build-linux build-windows build-macos

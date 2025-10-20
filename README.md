@@ -84,7 +84,7 @@ go-llm-proxy/
 
 3. **Run the proxy**:
    ```bash
-   ./llm-proxy
+   ./bin/llm-proxy
    # or
    go run .
    ```
@@ -238,7 +238,7 @@ make help         # Show all available commands
 
 ```bash
 go run .          # Run the server
-go build -o llm-proxy .  # Build binary
+go build -o bin/llm-proxy .  # Build binary
 go test ./...     # Run tests
 go mod tidy       # Install dependencies
 ```
@@ -256,7 +256,7 @@ go mod tidy       # Install dependencies
 
 ```bash
 # Build for current platform
-go build -o llm-proxy .
+go build -o bin/llm-proxy .
 
 # Or use make
 make build
@@ -277,7 +277,7 @@ make build-all      # All platforms
 ### Common Issues
 
 1. **"Proxy server is not running" error**:
-   - Make sure the proxy is running: `./llm-proxy` or `go run .`
+   - Make sure the proxy is running: `./bin/llm-proxy` or `go run .`
    - Check if port 11434 is available: `lsof -i :11434`
 
 2. **"API error"**:
