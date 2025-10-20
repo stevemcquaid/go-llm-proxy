@@ -61,7 +61,7 @@ type OllamaGenerateResponse struct {
 	CreatedAt          string `json:"created_at"`
 	Response           string `json:"response"`
 	Done               bool   `json:"done"`
-	Context            []int  `json:"context,omitempty"`
+	Context            []int  `json:"context"`
 	TotalDuration      int64  `json:"total_duration,omitempty"`
 	LoadDuration       int64  `json:"load_duration,omitempty"`
 	PromptEvalCount    int    `json:"prompt_eval_count,omitempty"`
@@ -87,6 +87,7 @@ type OllamaChatResponse struct {
 	CreatedAt          string        `json:"created_at"`
 	Message            OllamaMessage `json:"message"`
 	Done               bool          `json:"done"`
+	Context            []int         `json:"context"`
 	TotalDuration      int64         `json:"total_duration,omitempty"`
 	LoadDuration       int64         `json:"load_duration,omitempty"`
 	PromptEvalCount    int           `json:"prompt_eval_count,omitempty"`
@@ -456,6 +457,7 @@ func (p *ProxyServer) handleAnthropicGenerate(req OllamaGenerateRequest, model s
 		CreatedAt: anthropicResp.ID,
 		Response:  anthropicResp.Content[0].Text,
 		Done:      true,
+		Context:   []int{},
 	}, nil
 }
 
@@ -483,6 +485,7 @@ func (p *ProxyServer) handleOpenAIGenerate(req OllamaGenerateRequest, model stri
 		CreatedAt: fmt.Sprintf("%d", openaiResp.Created),
 		Response:  openaiResp.Choices[0].Message.Content,
 		Done:      true,
+		Context:   []int{},
 	}, nil
 }
 
@@ -512,7 +515,8 @@ func (p *ProxyServer) handleAnthropicChat(req OllamaChatRequest, model string) (
 			Role:    "assistant",
 			Content: anthropicResp.Content[0].Text,
 		},
-		Done: true,
+		Done:    true,
+		Context: []int{},
 	}, nil
 }
 
@@ -545,7 +549,8 @@ func (p *ProxyServer) handleOpenAIChat(req OllamaChatRequest, model string) (Oll
 			Role:    "assistant",
 			Content: openaiResp.Choices[0].Message.Content,
 		},
-		Done: true,
+		Done:    true,
+		Context: []int{},
 	}, nil
 }
 
