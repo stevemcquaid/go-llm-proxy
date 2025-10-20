@@ -87,7 +87,7 @@ func (r *ModelRegistry) addDefaultModels() {
 			BackendModel: "gpt-5",
 			Family:       "gpt",
 			Description:  "Latest multimodal model with reasoning capabilities and unified interface",
-			MaxTokens:    4096,
+			MaxTokens:    128000,
 			Enabled:      true,
 		},
 		{
@@ -97,7 +97,7 @@ func (r *ModelRegistry) addDefaultModels() {
 			BackendModel: "gpt-4.1",
 			Family:       "gpt",
 			Description:  "Enhanced model with improved coding and long-context comprehension",
-			MaxTokens:    4096,
+			MaxTokens:    1000000,
 			Enabled:      true,
 		},
 		{
@@ -107,7 +107,7 @@ func (r *ModelRegistry) addDefaultModels() {
 			BackendModel: "gpt-4o",
 			Family:       "gpt",
 			Description:  "Most capable GPT-4 model with multimodal capabilities",
-			MaxTokens:    4096,
+			MaxTokens:    16384,
 			Enabled:      true,
 		},
 		{
@@ -117,7 +117,7 @@ func (r *ModelRegistry) addDefaultModels() {
 			BackendModel: "gpt-4o-mini",
 			Family:       "gpt",
 			Description:  "Faster, cheaper GPT-4 model with multimodal support",
-			MaxTokens:    4096,
+			MaxTokens:    16384,
 			Enabled:      true,
 		},
 		{
@@ -127,7 +127,7 @@ func (r *ModelRegistry) addDefaultModels() {
 			BackendModel: "gpt-4",
 			Family:       "gpt",
 			Description:  "Classic GPT-4 model for reliable performance",
-			MaxTokens:    4096,
+			MaxTokens:    8192,
 			Enabled:      true,
 		},
 		{
@@ -233,7 +233,7 @@ func (r *ModelRegistry) addModelsForAvailableBackends(backendManager *backend.Ba
 				BackendModel: "gpt-5",
 				Family:       "gpt",
 				Description:  "Latest multimodal model with reasoning capabilities and unified interface",
-				MaxTokens:    4096,
+				MaxTokens:    128000,
 				Enabled:      true,
 			},
 			{
@@ -243,7 +243,7 @@ func (r *ModelRegistry) addModelsForAvailableBackends(backendManager *backend.Ba
 				BackendModel: "gpt-4.1",
 				Family:       "gpt",
 				Description:  "Enhanced model with improved coding and long-context comprehension",
-				MaxTokens:    4096,
+				MaxTokens:    1000000,
 				Enabled:      true,
 			},
 			{
@@ -253,7 +253,7 @@ func (r *ModelRegistry) addModelsForAvailableBackends(backendManager *backend.Ba
 				BackendModel: "gpt-4o",
 				Family:       "gpt",
 				Description:  "Most capable GPT-4 model with multimodal capabilities",
-				MaxTokens:    4096,
+				MaxTokens:    16384,
 				Enabled:      true,
 			},
 			{
@@ -263,7 +263,7 @@ func (r *ModelRegistry) addModelsForAvailableBackends(backendManager *backend.Ba
 				BackendModel: "gpt-4o-mini",
 				Family:       "gpt",
 				Description:  "Faster, cheaper GPT-4 model with multimodal support",
-				MaxTokens:    4096,
+				MaxTokens:    16384,
 				Enabled:      true,
 			},
 			{
@@ -273,7 +273,7 @@ func (r *ModelRegistry) addModelsForAvailableBackends(backendManager *backend.Ba
 				BackendModel: "gpt-4",
 				Family:       "gpt",
 				Description:  "Classic GPT-4 model for reliable performance",
-				MaxTokens:    4096,
+				MaxTokens:    8192,
 				Enabled:      true,
 			},
 			{

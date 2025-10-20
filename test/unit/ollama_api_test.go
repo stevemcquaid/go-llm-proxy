@@ -33,7 +33,7 @@ func TestOllamaAPISpec(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
-		assert.Equal(t, "Ollama is running in proxyServerV2 mode.", w.Body.String())
+		assert.Equal(t, "Ollama is running in proxy mode.", w.Body.String())
 	})
 
 	t.Run("APITagsEndpoint", func(t *testing.T) {
@@ -83,7 +83,7 @@ func TestOllamaAPISpec(t *testing.T) {
 
 		// Check required fields
 		assert.Contains(t, response, "version")
-		assert.Contains(t, response, "proxyServerV2")
+		assert.Contains(t, response, "proxy")
 		assert.Contains(t, response, "backends")
 	})
 
