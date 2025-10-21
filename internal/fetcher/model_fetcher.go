@@ -109,6 +109,10 @@ func (f *ModelFetcher) fetchAnthropicModels(ctx context.Context) ([]types.ModelC
 		}
 
 		// Convert to our ModelConfig format
+		// Note: Anthropic API doesn't provide context_size in their models endpoint
+		// so we always use our estimation function
+		maxTokens := f.estimateMaxTokens(apiModel.ID, types.BackendAnthropic)
+
 		model := types.ModelConfig{
 			Name:         f.generateModelName(apiModel.ID, types.BackendAnthropic),
 			DisplayName:  f.generateDisplayName(apiModel.ID, types.BackendAnthropic),
@@ -116,7 +120,7 @@ func (f *ModelFetcher) fetchAnthropicModels(ctx context.Context) ([]types.ModelC
 			BackendModel: apiModel.ID,
 			Family:       f.extractFamily(apiModel.ID, types.BackendAnthropic),
 			Description:  apiModel.Description,
-			MaxTokens:    apiModel.ContextSize,
+			MaxTokens:    maxTokens,
 			Enabled:      true,
 		}
 
@@ -285,8 +289,14 @@ func (f *ModelFetcher) estimateMaxTokens(apiModelID string, backend types.Backen
 		if strings.Contains(apiModelID, "claude-3-5") {
 			return 200000
 		}
+		if strings.Contains(apiModelID, "claude-3-7") {
+			return 8192
+		}
 		if strings.Contains(apiModelID, "claude-3") {
 			return 200000
+		}
+		if strings.Contains(apiModelID, "claude-2") {
+			return 100000
 		}
 		return 100000 // Default fallback
 	default:

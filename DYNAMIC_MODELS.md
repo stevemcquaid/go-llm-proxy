@@ -8,6 +8,8 @@ Instead of using hardcoded model configurations, the proxy now dynamically fetch
 - Anthropic API (https://api.anthropic.com/v1/models)
 - OpenAI API (https://api.openai.com/v1/models)
 
+**Important**: The proxy will fail to start if dynamic model fetching fails. There is no fallback to hardcoded models.
+
 ## Configuration
 
 ### Environment Variables

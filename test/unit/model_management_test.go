@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"go-llm-proxy/internal/backend"
-	"go-llm-proxy/internal/models"
 	"go-llm-proxy/internal/types"
+	"go-llm-proxy/test/helpers"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,13 +15,13 @@ import (
 // TestModelRegistry tests the model registry functionality
 func TestModelRegistry(t *testing.T) {
 	t.Run("CreateRegistry", func(t *testing.T) {
-		registry := models.NewModelRegistry()
+		registry := helpers.CreateTestModelRegistry()
 		assert.NotNil(t, registry)
 		// Note: Cannot access unexported field registry.models from test package
 	})
 
 	t.Run("AddModel", func(t *testing.T) {
-		registry := models.NewModelRegistry()
+		registry := helpers.CreateTestModelRegistry()
 
 		newModel := types.ModelConfig{
 			Name:         "test-model",
@@ -43,7 +43,7 @@ func TestModelRegistry(t *testing.T) {
 	})
 
 	t.Run("GetModel", func(t *testing.T) {
-		registry := models.NewModelRegistry()
+		registry := helpers.CreateTestModelRegistry()
 
 		// Test existing model
 		model, exists := registry.GetModel("gpt-4o")
@@ -57,7 +57,7 @@ func TestModelRegistry(t *testing.T) {
 	})
 
 	t.Run("GetModelsByBackend", func(t *testing.T) {
-		registry := models.NewModelRegistry()
+		registry := helpers.CreateTestModelRegistry()
 
 		// Get OpenAI models
 		openaiModels := registry.GetModelsByBackend(types.BackendOpenAI)
@@ -79,7 +79,7 @@ func TestModelRegistry(t *testing.T) {
 	})
 
 	t.Run("GetAllModels", func(t *testing.T) {
-		registry := models.NewModelRegistry()
+		registry := helpers.CreateTestModelRegistry()
 
 		allModels := registry.GetAllModels()
 		assert.Greater(t, len(allModels), 0)
@@ -90,7 +90,7 @@ func TestModelRegistry(t *testing.T) {
 	})
 
 	t.Run("EnableDisableModel", func(t *testing.T) {
-		registry := models.NewModelRegistry()
+		registry := helpers.CreateTestModelRegistry()
 
 		// Disable a model
 		registry.DisableModel("gpt-3.5-turbo")
@@ -106,7 +106,7 @@ func TestModelRegistry(t *testing.T) {
 	})
 
 	t.Run("RemoveModel", func(t *testing.T) {
-		registry := models.NewModelRegistry()
+		registry := helpers.CreateTestModelRegistry()
 
 		// Add a test model
 		testModel := types.ModelConfig{

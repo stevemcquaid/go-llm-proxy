@@ -201,7 +201,7 @@ STREAMING_DELAY_MS=50
 - **JetBrains IDE Support** - Works seamlessly with GoLand AI Assistant
 - **Multi-Backend Support** - Anthropic and OpenAI backends
 - **Streaming Support** - Both streaming and non-streaming responses
-- **Model Management** - Dynamic model addition/removal
+- **Dynamic Model Fetching** - Automatically discovers models from APIs at startup
 - **CORS Support** - Cross-origin request handling
 - **Comprehensive Testing** - Full test coverage
 

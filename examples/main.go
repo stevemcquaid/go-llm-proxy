@@ -45,7 +45,7 @@ func main() {
 func exampleAddModel() {
 	// This would be implemented in the main package
 	fmt.Println("To add a new model, use the ModelRegistry:")
-	fmt.Println("  registry := NewModelRegistry()")
+	fmt.Println("  registry := NewModelRegistryWithBackends(backendManager)")
 	fmt.Println("  newModel := ModelConfig{...}")
 	fmt.Println("  registry.AddModel(newModel)")
 }

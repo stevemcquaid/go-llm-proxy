@@ -9,9 +9,9 @@ import (
 	"testing"
 
 	"go-llm-proxy/internal/backend"
-	"go-llm-proxy/internal/models"
 	"go-llm-proxy/internal/streaming"
 	"go-llm-proxy/internal/types"
+	"go-llm-proxy/test/helpers"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -29,7 +29,7 @@ func TestStreamingErrorHandling(t *testing.T) {
 	backendManager.RegisterBackend(types.BackendOpenAI, mockBackend)
 
 	// Create model registry with available backends
-	modelRegistry := models.NewModelRegistryWithBackends(backendManager)
+	modelRegistry := helpers.CreateTestModelRegistry()
 
 	// Create streaming handler
 	streamingHandler := streaming.NewStreamingHandler(backendManager, modelRegistry)
@@ -213,7 +213,7 @@ func TestStreamingErrorFormat(t *testing.T) {
 
 	// Create a minimal setup
 	backendManager := backend.NewBackendManager()
-	modelRegistry := models.NewModelRegistryWithBackends(backendManager)
+	modelRegistry := helpers.CreateTestModelRegistry()
 	streamingHandler := streaming.NewStreamingHandler(backendManager, modelRegistry)
 
 	t.Run("ErrorResponseFormat", func(t *testing.T) {

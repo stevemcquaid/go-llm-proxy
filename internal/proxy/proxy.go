@@ -3,6 +3,7 @@ package proxy
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 
 	"go-llm-proxy/internal/backend"
@@ -39,10 +40,8 @@ func NewProxyServerV2() *ProxyServerV2 {
 	}
 	modelRegistry, err := models.NewModelRegistryWithDynamicFetching(cfg, backendManager, configPath)
 	if err != nil {
-		// Fall back to hardcoded models if dynamic fetching fails
-		fmt.Printf("Warning: Failed to fetch models dynamically: %v\n", err)
-		fmt.Println("Falling back to hardcoded models...")
-		modelRegistry = models.NewModelRegistryWithBackends(backendManager)
+		// Fail fast if dynamic fetching fails - no fallback
+		log.Fatalf("Failed to fetch models dynamically: %v\n", err)
 	}
 
 	// Create streaming handler

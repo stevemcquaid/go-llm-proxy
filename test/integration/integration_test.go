@@ -11,10 +11,10 @@ import (
 
 	"go-llm-proxy/internal/backend"
 	"go-llm-proxy/internal/config"
-	"go-llm-proxy/internal/models"
 	"go-llm-proxy/internal/proxy"
 	"go-llm-proxy/internal/streaming"
 	"go-llm-proxy/internal/types"
+	"go-llm-proxy/test/helpers"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -335,7 +335,7 @@ func TestStreamingIntegration(t *testing.T) {
 // TestModelManagementIntegration tests model management functionality
 func TestModelManagementIntegration(t *testing.T) {
 	t.Run("AddRemoveModels", func(t *testing.T) {
-		registry := models.NewModelRegistry()
+		registry := helpers.CreateTestModelRegistry()
 		initialCount := len(registry.GetAllModels())
 
 		// Add a new model
@@ -365,7 +365,7 @@ func TestModelManagementIntegration(t *testing.T) {
 	})
 
 	t.Run("EnableDisableModels", func(t *testing.T) {
-		registry := models.NewModelRegistry()
+		registry := helpers.CreateTestModelRegistry()
 
 		// Disable a model
 		registry.DisableModel("gpt-3.5-turbo")
@@ -429,7 +429,7 @@ func createTestProxy() *proxy.ProxyServerV2 {
 	backendManager.RegisterBackend(types.BackendAnthropic, mockAnthropic)
 
 	// Create model registry with available backends
-	modelRegistry := models.NewModelRegistryWithBackends(backendManager)
+	modelRegistry := helpers.CreateTestModelRegistry()
 
 	// Create streaming handler
 	streamingHandler := streaming.NewStreamingHandler(backendManager, modelRegistry)
