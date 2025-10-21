@@ -65,8 +65,17 @@ func (p *ProxyServerV2) HandleGenerate(c *gin.Context) {
 		return
 	}
 
+	// For generate requests, we need to estimate tokens from the prompt
+	// and calculate appropriate max_tokens
+	var messages []types.ChatMessage
+	messages = append(messages, types.ChatMessage{
+		Role:    "user",
+		Content: req.Prompt,
+	})
+	maxTokensForRequest := types.CalculateMaxTokensForRequest(modelConfig, messages)
+
 	// Create request for backend
-	generateReq := types.ConvertOllamaToGenerateRequest(req, modelConfig.MaxTokens)
+	generateReq := types.ConvertOllamaToGenerateRequest(req, maxTokensForRequest)
 	generateReq.Model = modelConfig.BackendModel
 
 	// Process request
@@ -126,8 +135,11 @@ func (p *ProxyServerV2) HandleChat(c *gin.Context) {
 		return
 	}
 
+	// Calculate appropriate max_tokens for this specific request
+	maxTokensForRequest := types.CalculateMaxTokensForRequest(modelConfig, messages)
+
 	// Create request for backend
-	chatReq := types.ConvertOllamaToChatRequest(req, modelConfig.MaxTokens)
+	chatReq := types.ConvertOllamaToChatRequest(req, maxTokensForRequest)
 	chatReq.Model = modelConfig.BackendModel
 
 	// Process request

@@ -51,10 +51,7 @@ type OllamaMessage struct {
 
 // ToChatMessage converts an OllamaMessage to ChatMessage
 func (om OllamaMessage) ToChatMessage() ChatMessage {
-	return ChatMessage{
-		Role:    om.Role,
-		Content: om.Content,
-	}
+	return ChatMessage(om)
 }
 
 type OllamaChatResponse struct {
@@ -256,12 +253,44 @@ func EstimateChatTokens(messages []ChatMessage) int {
 	return total + 10
 }
 
+// CalculateMaxTokensForRequest calculates the appropriate max_tokens for an API request
+// based on the model's context limit and input token count
+func CalculateMaxTokensForRequest(modelConfig ModelConfig, messages []ChatMessage) int {
+	estimatedInputTokens := EstimateChatTokens(messages)
+
+	// Reserve some buffer for the input tokens and calculate remaining for output
+	// Use a conservative approach: total context - input tokens - buffer
+	buffer := 100 // Small buffer for safety
+	availableForOutput := modelConfig.MaxTokens - estimatedInputTokens - buffer
+
+	// Ensure we don't go negative and have a reasonable minimum
+	if availableForOutput < 100 {
+		availableForOutput = 100 // Minimum 100 tokens for output
+	}
+
+	// Cap at a reasonable maximum to avoid very long responses
+	maxOutputTokens := 4000
+	if availableForOutput > maxOutputTokens {
+		availableForOutput = maxOutputTokens
+	}
+
+	return availableForOutput
+}
+
 // ValidateTokenLimits checks if a request would exceed the model's token limits
 func ValidateTokenLimits(modelConfig ModelConfig, messages []ChatMessage) error {
 	estimatedTokens := EstimateChatTokens(messages)
 
-	// Add buffer for response tokens (use 50% of max tokens as a conservative estimate)
-	maxInputTokens := int(float64(modelConfig.MaxTokens) * 0.5)
+	// For models with small context windows, be more conservative
+	// Reserve at least 25% of context for output tokens
+	var maxInputTokens int
+	if modelConfig.MaxTokens <= 8192 {
+		// For small context models, reserve 25% for output
+		maxInputTokens = int(float64(modelConfig.MaxTokens) * 0.75)
+	} else {
+		// For larger context models, reserve 50% for output
+		maxInputTokens = int(float64(modelConfig.MaxTokens) * 0.5)
+	}
 
 	if estimatedTokens > maxInputTokens {
 		return fmt.Errorf("request too long: estimated %d tokens exceeds model limit of %d tokens (max input: %d tokens). Please reduce the length of your messages",

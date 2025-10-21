@@ -79,8 +79,11 @@ func (sh *StreamingHandler) HandleStreamingChat(c *gin.Context, req types.Ollama
 		return
 	}
 
+	// Calculate appropriate max_tokens for this specific request
+	maxTokensForRequest := types.CalculateMaxTokensForRequest(modelConfig, messages)
+
 	// Create non-streaming request for backend
-	chatReq := types.ConvertOllamaToChatRequest(req, modelConfig.MaxTokens)
+	chatReq := types.ConvertOllamaToChatRequest(req, maxTokensForRequest)
 	chatReq.Model = modelConfig.BackendModel
 
 	// Get response from backend
@@ -137,8 +140,17 @@ func (sh *StreamingHandler) HandleStreamingGenerate(c *gin.Context, req types.Ol
 		return
 	}
 
+	// For generate requests, we need to estimate tokens from the prompt
+	// and calculate appropriate max_tokens
+	var messages []types.ChatMessage
+	messages = append(messages, types.ChatMessage{
+		Role:    "user",
+		Content: req.Prompt,
+	})
+	maxTokensForRequest := types.CalculateMaxTokensForRequest(modelConfig, messages)
+
 	// Create non-streaming request for backend
-	generateReq := types.ConvertOllamaToGenerateRequest(req, modelConfig.MaxTokens)
+	generateReq := types.ConvertOllamaToGenerateRequest(req, maxTokensForRequest)
 	generateReq.Model = modelConfig.BackendModel
 
 	// Get response from backend
