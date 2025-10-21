@@ -1,0 +1,20 @@
+# Example configuration file for go-llm-proxy
+# Set MODEL_CONFIG_PATH environment variable to point to this file
+
+model_filters:
+  anthropic:
+    enabled: true
+    include_patterns:
+      - "claude-*"
+    exclude_patterns:
+      - "claude-3-5-*"  # Exclude older 3.5 models
+      - "claude-2-*"    # Exclude 2.x models
+  
+  openai:
+    enabled: true
+    include_patterns:
+      - "gpt-*"
+    exclude_patterns:
+      - "gpt-3.5-turbo"  # Exclude specific model
+      - "text-*"         # Exclude text completion models
+      - "davinci-*"      # Exclude older models

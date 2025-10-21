@@ -6,6 +6,19 @@ import (
 	"strconv"
 )
 
+// ModelFilterConfig holds configuration for filtering models from APIs
+type ModelFilterConfig struct {
+	Enabled         bool     `yaml:"enabled"`
+	IncludePatterns []string `yaml:"include_patterns"`
+	ExcludePatterns []string `yaml:"exclude_patterns"`
+}
+
+// ModelFilters holds filter configurations for each backend
+type ModelFilters struct {
+	Anthropic ModelFilterConfig `yaml:"anthropic"`
+	OpenAI    ModelFilterConfig `yaml:"openai"`
+}
+
 // Config holds all configuration for the proxy
 type Config struct {
 	// Server configuration
@@ -22,6 +35,9 @@ type Config struct {
 	// Streaming configuration
 	StreamingChunkSize int `json:"streaming_chunk_size"`
 	StreamingDelay     int `json:"streaming_delay_ms"`
+
+	// Model filtering configuration
+	ModelFilters ModelFilters `yaml:"model_filters"`
 }
 
 // LoadConfig loads configuration from environment variables
@@ -35,6 +51,18 @@ func LoadConfig() *Config {
 		DefaultMaxTokens:   GetEnvInt("DEFAULT_MAX_TOKENS", 4096),
 		StreamingChunkSize: GetEnvInt("STREAMING_CHUNK_SIZE", 3),
 		StreamingDelay:     GetEnvInt("STREAMING_DELAY_MS", 50),
+		ModelFilters: ModelFilters{
+			Anthropic: ModelFilterConfig{
+				Enabled:         true,
+				IncludePatterns: []string{"claude-*"},
+				ExcludePatterns: []string{},
+			},
+			OpenAI: ModelFilterConfig{
+				Enabled:         true,
+				IncludePatterns: []string{"gpt-*"},
+				ExcludePatterns: []string{},
+			},
+		},
 	}
 
 	return config

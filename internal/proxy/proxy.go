@@ -3,6 +3,7 @@ package proxy
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"go-llm-proxy/internal/backend"
 	"go-llm-proxy/internal/config"
@@ -30,8 +31,19 @@ func NewProxyServerV2() *ProxyServerV2 {
 	backendFactory := backend.NewBackendFactory(cfg.AnthropicAPIKey, cfg.OpenAIAPIKey)
 	backendManager := backendFactory.CreateBackends()
 
-	// Create model registry with only available backends
-	modelRegistry := models.NewModelRegistryWithBackends(backendManager)
+	// Create model registry with dynamic fetching
+	// Try to load from config file first, fall back to environment variables
+	configPath := os.Getenv("MODEL_CONFIG_PATH")
+	if configPath == "" {
+		configPath = "config.yaml" // Default config file
+	}
+	modelRegistry, err := models.NewModelRegistryWithDynamicFetching(cfg, backendManager, configPath)
+	if err != nil {
+		// Fall back to hardcoded models if dynamic fetching fails
+		fmt.Printf("Warning: Failed to fetch models dynamically: %v\n", err)
+		fmt.Println("Falling back to hardcoded models...")
+		modelRegistry = models.NewModelRegistryWithBackends(backendManager)
+	}
 
 	// Create streaming handler
 	streamingHandler := streaming.NewStreamingHandler(backendManager, modelRegistry)

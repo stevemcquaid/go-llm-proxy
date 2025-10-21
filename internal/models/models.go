@@ -1,7 +1,13 @@
 package models
 
 import (
+	"context"
+	"fmt"
+	"log"
+
 	"go-llm-proxy/internal/backend"
+	"go-llm-proxy/internal/config"
+	"go-llm-proxy/internal/fetcher"
 	"go-llm-proxy/internal/types"
 )
 
@@ -30,6 +36,47 @@ func NewModelRegistryWithBackends(backendManager *backend.BackendManager) *Model
 	// Add models only for available backends
 	registry.addModelsForAvailableBackends(backendManager)
 	return registry
+}
+
+// NewModelRegistryWithDynamicFetching creates a new model registry with dynamically fetched models
+func NewModelRegistryWithDynamicFetching(cfg *config.Config, backendManager *backend.BackendManager, configPath string) (*ModelRegistry, error) {
+	registry := &ModelRegistry{
+		models: make(map[string]types.ModelConfig),
+	}
+
+	// Create model fetcher
+	modelFetcher := fetcher.NewModelFetcher(cfg)
+
+	// Load config from file if provided
+	if configPath != "" {
+		if err := modelFetcher.LoadConfigFromFile(configPath); err != nil {
+			log.Printf("Warning: Failed to load config from file %s: %v", configPath, err)
+		}
+	}
+
+	// Fetch models from APIs
+	ctx := context.Background()
+	dynamicModels, err := modelFetcher.FetchAllModels(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch models: %w", err)
+	}
+
+	// Filter models to only include those for available backends
+	availableBackends := backendManager.GetAvailableBackends()
+	backendMap := make(map[types.BackendType]bool)
+	for _, backendType := range availableBackends {
+		backendMap[backendType] = true
+	}
+
+	// Add only models for available backends
+	for _, model := range dynamicModels {
+		if backendMap[model.Backend] {
+			registry.models[model.Name] = model
+		}
+	}
+
+	log.Printf("Loaded %d models dynamically from APIs", len(registry.models))
+	return registry, nil
 }
 
 // addDefaultModels adds all the default models to the registry
