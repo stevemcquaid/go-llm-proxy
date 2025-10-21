@@ -2,6 +2,8 @@ package types
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 )
 
@@ -45,6 +47,14 @@ type OllamaChatRequest struct {
 type OllamaMessage struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
+}
+
+// ToChatMessage converts an OllamaMessage to ChatMessage
+func (om OllamaMessage) ToChatMessage() ChatMessage {
+	return ChatMessage{
+		Role:    om.Role,
+		Content: om.Content,
+	}
 }
 
 type OllamaChatResponse struct {
@@ -115,10 +125,7 @@ func ConvertOllamaToGenerateRequest(req OllamaGenerateRequest, maxTokens int) Ge
 func ConvertOllamaToChatRequest(req OllamaChatRequest, maxTokens int) ChatRequest {
 	var messages []ChatMessage
 	for _, msg := range req.Messages {
-		messages = append(messages, ChatMessage{
-			Role:    msg.Role,
-			Content: msg.Content,
-		})
+		messages = append(messages, msg.ToChatMessage())
 	}
 
 	return ChatRequest{
@@ -223,4 +230,43 @@ func ConvertChatToOllamaResponse(resp *ChatResponse, model string) OllamaChatRes
 		Done:    true,
 		Context: []int{},
 	}
+}
+
+// EstimateTokens provides a rough estimation of token count for text
+// This is a simple approximation: ~4 characters per token for English text
+func EstimateTokens(text string) int {
+	if text == "" {
+		return 0
+	}
+	// Simple approximation: ~4 characters per token
+	// This is conservative and may overestimate, but that's safer for validation
+	return (len(strings.TrimSpace(text)) + 3) / 4
+}
+
+// EstimateChatTokens estimates the total token count for a chat request
+func EstimateChatTokens(messages []ChatMessage) int {
+	total := 0
+	for _, msg := range messages {
+		// Add tokens for role and content
+		total += EstimateTokens(msg.Role) + EstimateTokens(msg.Content)
+		// Add some overhead for message formatting
+		total += 4
+	}
+	// Add some overhead for the overall request structure
+	return total + 10
+}
+
+// ValidateTokenLimits checks if a request would exceed the model's token limits
+func ValidateTokenLimits(modelConfig ModelConfig, messages []ChatMessage) error {
+	estimatedTokens := EstimateChatTokens(messages)
+
+	// Add buffer for response tokens (use 50% of max tokens as a conservative estimate)
+	maxInputTokens := int(float64(modelConfig.MaxTokens) * 0.5)
+
+	if estimatedTokens > maxInputTokens {
+		return fmt.Errorf("request too long: estimated %d tokens exceeds model limit of %d tokens (max input: %d tokens). Please reduce the length of your messages",
+			estimatedTokens, modelConfig.MaxTokens, maxInputTokens)
+	}
+
+	return nil
 }

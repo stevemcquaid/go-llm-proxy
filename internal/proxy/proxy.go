@@ -111,6 +111,21 @@ func (p *ProxyServerV2) HandleChat(c *gin.Context) {
 		return
 	}
 
+	// Convert messages for validation
+	var messages []types.ChatMessage
+	for _, msg := range req.Messages {
+		messages = append(messages, types.ChatMessage{
+			Role:    msg.Role,
+			Content: msg.Content,
+		})
+	}
+
+	// Validate token limits before making the request
+	if err := types.ValidateTokenLimits(modelConfig, messages); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
 	// Create request for backend
 	chatReq := types.ConvertOllamaToChatRequest(req, modelConfig.MaxTokens)
 	chatReq.Model = modelConfig.BackendModel

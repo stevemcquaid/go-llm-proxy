@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"go-llm-proxy/internal/backend"
@@ -44,6 +45,32 @@ func (sh *StreamingHandler) HandleStreamingChat(c *gin.Context, req types.Ollama
 			Message: types.OllamaMessage{
 				Role:    "assistant",
 				Content: "Error: model not found",
+			},
+			Done:    true,
+			Context: []int{},
+		}
+		sh.streamResponse(c, errorResp)
+		return
+	}
+
+	// Convert messages for validation
+	var messages []types.ChatMessage
+	for _, msg := range req.Messages {
+		messages = append(messages, types.ChatMessage{
+			Role:    msg.Role,
+			Content: msg.Content,
+		})
+	}
+
+	// Validate token limits before making the request
+	if err := types.ValidateTokenLimits(modelConfig, messages); err != nil {
+		// For streaming responses, we need to return an error in streaming format
+		errorResp := types.OllamaChatResponse{
+			Model:     req.Model,
+			CreatedAt: fmt.Sprintf("%d", time.Now().Unix()),
+			Message: types.OllamaMessage{
+				Role:    "assistant",
+				Content: fmt.Sprintf("Error: %s", err.Error()),
 			},
 			Done:    true,
 			Context: []int{},
@@ -175,18 +202,13 @@ func (sh *StreamingHandler) streamResponse(c *gin.Context, response interface{})
 		return
 	}
 
-	// Break content into chunks
-	chunkSize := 3 // Small chunks for demonstration
-	for i := 0; i < len(content); i += chunkSize {
-		end := i + chunkSize
-		if end > len(content) {
-			end = len(content)
-		}
+	// Check if this is an error response (contains "Error:")
+	isError := strings.Contains(content, "Error:")
 
-		chunk := content[i:end]
-		done := end >= len(content)
-
-		// Create streaming response based on type
+	// For error responses, send as a single chunk
+	// For normal responses, break into chunks
+	if isError {
+		// Send error as single chunk
 		var streamResp interface{}
 		switch response.(type) {
 		case types.OllamaChatResponse:
@@ -195,28 +217,70 @@ func (sh *StreamingHandler) streamResponse(c *gin.Context, response interface{})
 				CreatedAt: createdAt,
 				Message: types.OllamaMessage{
 					Role:    "assistant",
-					Content: chunk,
+					Content: content,
 				},
-				Done:    done,
+				Done:    true,
 				Context: []int{},
 			}
 		case types.OllamaGenerateResponse:
 			streamResp = types.OllamaGenerateResponse{
 				Model:     model,
 				CreatedAt: createdAt,
-				Response:  chunk,
-				Done:      done,
+				Response:  content,
+				Done:      true,
 				Context:   []int{},
 			}
 		}
 
-		// Write the chunk as JSON
+		// Write the error response as JSON
 		jsonData, _ := json.Marshal(streamResp)
 		c.Writer.Write(jsonData)
 		c.Writer.WriteString("\n")
 		c.Writer.Flush()
+	} else {
+		// Break content into chunks for normal responses
+		chunkSize := 3 // Small chunks for demonstration
+		for i := 0; i < len(content); i += chunkSize {
+			end := i + chunkSize
+			if end > len(content) {
+				end = len(content)
+			}
 
-		// Small delay to simulate streaming
-		time.Sleep(50 * time.Millisecond)
+			chunk := content[i:end]
+			done := end >= len(content)
+
+			// Create streaming response based on type
+			var streamResp interface{}
+			switch response.(type) {
+			case types.OllamaChatResponse:
+				streamResp = types.OllamaChatResponse{
+					Model:     model,
+					CreatedAt: createdAt,
+					Message: types.OllamaMessage{
+						Role:    "assistant",
+						Content: chunk,
+					},
+					Done:    done,
+					Context: []int{},
+				}
+			case types.OllamaGenerateResponse:
+				streamResp = types.OllamaGenerateResponse{
+					Model:     model,
+					CreatedAt: createdAt,
+					Response:  chunk,
+					Done:      done,
+					Context:   []int{},
+				}
+			}
+
+			// Write the chunk as JSON
+			jsonData, _ := json.Marshal(streamResp)
+			c.Writer.Write(jsonData)
+			c.Writer.WriteString("\n")
+			c.Writer.Flush()
+
+			// Small delay to simulate streaming
+			time.Sleep(50 * time.Millisecond)
+		}
 	}
 }

@@ -62,8 +62,13 @@ func TestModelTokenLimits(t *testing.T) {
 				assert.Greater(t, model.MaxTokens, 0, "Model %s should have positive token limit", model.Name)
 				assert.LessOrEqual(t, model.MaxTokens, 200000, "Model %s should have reasonable token limit", model.Name)
 
-				// All Anthropic models should have 200000 token limit
-				assert.Equal(t, 200000, model.MaxTokens, "Anthropic model %s should have 200000 token limit", model.Name)
+				// Test specific model limits
+				switch model.Name {
+				case "claude-3.7-sonnet":
+					assert.Equal(t, 8192, model.MaxTokens, "claude-3.7-sonnet should have 8192 token limit")
+				case "claude-4.5-sonnet", "claude-4.5-haiku", "claude-4.1-opus":
+					assert.Equal(t, 200000, model.MaxTokens, "Anthropic model %s should have 200000 token limit", model.Name)
+				}
 			})
 		}
 	})

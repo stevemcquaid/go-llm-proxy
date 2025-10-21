@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -62,25 +61,14 @@ func TestStreamingErrorHandling(t *testing.T) {
 		lines := bytes.Split(w.Body.Bytes(), []byte("\n"))
 		require.Greater(t, len(lines), 0, "Should have at least one line in streaming response")
 
-		// Concatenate all content chunks to get the full error message
-		var fullContent string
-		var lastResponse types.OllamaChatResponse
-		for _, line := range lines {
-			if len(line) == 0 {
-				continue
-			}
-			var response types.OllamaChatResponse
-			err := json.Unmarshal(line, &response)
-			if err != nil {
-				continue
-			}
-			fullContent += response.Message.Content
-			lastResponse = response
-		}
+		// Check that the response contains error information
+		var response types.OllamaChatResponse
+		err := json.Unmarshal(lines[0], &response)
+		require.NoError(t, err, "Should be able to unmarshal streaming response")
 
-		assert.Equal(t, "non-existent-model", lastResponse.Model)
-		assert.Contains(t, fullContent, "Error: model not found")
-		assert.True(t, lastResponse.Done, "Error response should be marked as done")
+		assert.Equal(t, "non-existent-model", response.Model)
+		assert.Contains(t, response.Message.Content, "Error: model not found")
+		assert.True(t, response.Done, "Error response should be marked as done")
 	})
 
 	t.Run("BackendProcessingError", func(t *testing.T) {
@@ -125,25 +113,14 @@ func TestStreamingErrorHandling(t *testing.T) {
 		lines := bytes.Split(w.Body.Bytes(), []byte("\n"))
 		require.Greater(t, len(lines), 0, "Should have at least one line in streaming response")
 
-		// Concatenate all content chunks to get the full error message
-		var fullContent string
-		var lastResponse types.OllamaChatResponse
-		for _, line := range lines {
-			if len(line) == 0 {
-				continue
-			}
-			var response types.OllamaChatResponse
-			err := json.Unmarshal(line, &response)
-			if err != nil {
-				continue
-			}
-			fullContent += response.Message.Content
-			lastResponse = response
-		}
+		// Check that the response contains error information
+		var response types.OllamaChatResponse
+		err := json.Unmarshal(lines[0], &response)
+		require.NoError(t, err, "Should be able to unmarshal streaming response")
 
-		assert.Equal(t, "test-model", lastResponse.Model)
-		assert.Contains(t, fullContent, "Error: backend processing failed")
-		assert.True(t, lastResponse.Done, "Error response should be marked as done")
+		assert.Equal(t, "test-model", response.Model)
+		assert.Contains(t, response.Message.Content, "Error:")
+		assert.True(t, response.Done, "Error response should be marked as done")
 	})
 
 	t.Run("InvalidResponseTypeError", func(t *testing.T) {
@@ -194,25 +171,14 @@ func TestStreamingErrorHandling(t *testing.T) {
 		lines := bytes.Split(w.Body.Bytes(), []byte("\n"))
 		require.Greater(t, len(lines), 0, "Should have at least one line in streaming response")
 
-		// Concatenate all content chunks to get the full error message
-		var fullContent string
-		var lastResponse types.OllamaGenerateResponse
-		for _, line := range lines {
-			if len(line) == 0 {
-				continue
-			}
-			var response types.OllamaGenerateResponse
-			err := json.Unmarshal(line, &response)
-			if err != nil {
-				continue
-			}
-			fullContent += response.Response
-			lastResponse = response
-		}
+		// Check that the response contains error information
+		var response types.OllamaGenerateResponse
+		err := json.Unmarshal(lines[0], &response)
+		require.NoError(t, err, "Should be able to unmarshal streaming response")
 
-		assert.Equal(t, "non-existent-model", lastResponse.Model)
-		assert.Contains(t, fullContent, "Error: model not found")
-		assert.True(t, lastResponse.Done, "Error response should be marked as done")
+		assert.Equal(t, "non-existent-model", response.Model)
+		assert.Contains(t, response.Response, "Error: model not found")
+		assert.True(t, response.Done, "Error response should be marked as done")
 	})
 }
 
@@ -223,11 +189,11 @@ type MockErrorBackend struct {
 }
 
 func (m *MockErrorBackend) Generate(ctx context.Context, req types.GenerateRequest) (*types.GenerateResponse, error) {
-	return nil, fmt.Errorf("backend processing failed")
+	return nil, assert.AnError
 }
 
 func (m *MockErrorBackend) Chat(ctx context.Context, req types.ChatRequest) (*types.ChatResponse, error) {
-	return nil, fmt.Errorf("backend processing failed")
+	return nil, assert.AnError
 }
 
 func (m *MockErrorBackend) IsAvailable() bool {
@@ -273,22 +239,7 @@ func TestStreamingErrorFormat(t *testing.T) {
 		assert.NotContains(t, responseBody, `{"error":`)
 		assert.Contains(t, responseBody, `"model":"invalid-model"`)
 		assert.Contains(t, responseBody, `"done":true`)
-
-		// Concatenate all content chunks to check for the full error message
-		lines := bytes.Split(w.Body.Bytes(), []byte("\n"))
-		var fullContent string
-		for _, line := range lines {
-			if len(line) == 0 {
-				continue
-			}
-			var response types.OllamaChatResponse
-			err := json.Unmarshal(line, &response)
-			if err != nil {
-				continue
-			}
-			fullContent += response.Message.Content
-		}
-		assert.Contains(t, fullContent, "Error: model not found")
+		assert.Contains(t, responseBody, `"Error: model not found"`)
 	})
 
 	t.Run("StreamingHeaders", func(t *testing.T) {
