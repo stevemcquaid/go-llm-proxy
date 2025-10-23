@@ -16,5 +16,18 @@ model_filters:
       - "gpt-*"
     exclude_patterns:
       - "gpt-3.5-turbo"  # Exclude specific model
-      - "text-*"         # Exclude text completion models
+      - "*text*"         # Exclude text completion models
       - "davinci-*"      # Exclude older models
+      - "*audio*"
+      - "*vision*"
+      - "*video*"
+      - "*image*"
+      - "*audio*"
+      - "*realtime*"
+      - "*transcribe*"
+      - "*search*"
+      - "*preview*"
+      - "*tts*"
+      - "*test*"
+      - "*2024*"
+      - "*2025*"
