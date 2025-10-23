@@ -42,3 +42,6 @@ target
 *.tgz
 .gradle
 tmp/*
+
+# config file
+config.yaml
