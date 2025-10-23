@@ -134,10 +134,7 @@ func (p *ProxyServerV2) HandleChat(c *gin.Context) {
 	// Convert messages for validation
 	var messages []types.ChatMessage
 	for _, msg := range req.Messages {
-		messages = append(messages, types.ChatMessage{
-			Role:    msg.Role,
-			Content: msg.Content,
-		})
+		messages = append(messages, msg.ToChatMessage())
 	}
 
 	// Validate token limits before making the request
@@ -177,11 +174,11 @@ func (p *ProxyServerV2) HandleChat(c *gin.Context) {
 // HandleTags handles the /api/tags endpoint (list available models)
 func (p *ProxyServerV2) HandleTags(c *gin.Context) {
 	// Get all available models
-	models := p.ModelRegistry.GetAllModels()
+	allModels := p.ModelRegistry.GetAllModels()
 
 	// Convert to Ollama format
 	var ollamaModels []types.OllamaModel
-	for _, model := range models {
+	for _, model := range allModels {
 		ollamaModels = append(ollamaModels, model.ToOllamaModel())
 	}
 
@@ -193,8 +190,8 @@ func (p *ProxyServerV2) HandleTags(c *gin.Context) {
 func (p *ProxyServerV2) HandleVersion(c *gin.Context) {
 	availableBackends := p.BackendManager.GetAvailableBackends()
 	backendNames := make([]string, len(availableBackends))
-	for i, backend := range availableBackends {
-		backendNames[i] = string(backend)
+	for i, myBackend := range availableBackends {
+		backendNames[i] = string(myBackend)
 	}
 
 	c.JSON(200, gin.H{

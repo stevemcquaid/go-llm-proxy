@@ -67,31 +67,54 @@ func (f *ModelFetcher) LoadConfigFromFile(configPath string) error {
 func (f *ModelFetcher) FetchAllModels(ctx context.Context) ([]types.ModelConfig, error) {
 	var allModels []types.ModelConfig
 
-	// Fetch Anthropic models if enabled
-	if f.config.ModelFilters.Anthropic.Enabled && f.config.AnthropicAPIKey != "" {
-		anthropicModels, err := f.fetchAnthropicModels(ctx)
-		if err != nil {
-			log.Printf("Warning: Failed to fetch Anthropic models: %v", err)
-		} else {
-			allModels = append(allModels, anthropicModels...)
-		}
-	}
-
-	// Fetch OpenAI models if enabled
-	if f.config.ModelFilters.OpenAI.Enabled && f.config.OpenAIAPIKey != "" {
-		openaiModels, err := f.fetchOpenAIModels(ctx)
-		if err != nil {
-			log.Printf("Warning: Failed to fetch OpenAI models: %v", err)
-		} else {
-			allModels = append(allModels, openaiModels...)
-		}
-	}
+	// Fetch models from each enabled backend
+	allModels = append(allModels, f.fetchBackendModels(ctx, types.BackendAnthropic)...)
+	allModels = append(allModels, f.fetchBackendModels(ctx, types.BackendOpenAI)...)
 
 	if len(allModels) == 0 {
 		return nil, fmt.Errorf("no models could be fetched from any backend")
 	}
 
 	return allModels, nil
+}
+
+// fetchBackendModels fetches models from a specific backend if enabled
+func (f *ModelFetcher) fetchBackendModels(ctx context.Context, backend types.BackendType) []types.ModelConfig {
+	switch backend {
+	case types.BackendAnthropic:
+		return f.fetchAnthropicModelsIfEnabled(ctx)
+	case types.BackendOpenAI:
+		return f.fetchOpenAIModelsIfEnabled(ctx)
+	}
+	return nil
+}
+
+// fetchAnthropicModelsIfEnabled fetches Anthropic models if enabled
+func (f *ModelFetcher) fetchAnthropicModelsIfEnabled(ctx context.Context) []types.ModelConfig {
+	if !f.config.ModelFilters.Anthropic.Enabled || f.config.AnthropicAPIKey == "" {
+		return nil
+	}
+
+	models, err := f.fetchAnthropicModels(ctx)
+	if err != nil {
+		log.Printf("Warning: Failed to fetch Anthropic models: %v", err)
+		return nil
+	}
+	return models
+}
+
+// fetchOpenAIModelsIfEnabled fetches OpenAI models if enabled
+func (f *ModelFetcher) fetchOpenAIModelsIfEnabled(ctx context.Context) []types.ModelConfig {
+	if !f.config.ModelFilters.OpenAI.Enabled || f.config.OpenAIAPIKey == "" {
+		return nil
+	}
+
+	models, err := f.fetchOpenAIModels(ctx)
+	if err != nil {
+		log.Printf("Warning: Failed to fetch OpenAI models: %v", err)
+		return nil
+	}
+	return models
 }
 
 // fetchAnthropicModels fetches and filters Anthropic models
@@ -270,36 +293,45 @@ func (f *ModelFetcher) generateDescription(apiModelID string, backend types.Back
 
 // estimateMaxTokens estimates max tokens for models where not provided by API
 func (f *ModelFetcher) estimateMaxTokens(apiModelID string, backend types.BackendType) int {
-	// Common token limits for different model families
 	switch backend {
 	case types.BackendOpenAI:
-		// OpenAI models have known context limits
-		if strings.Contains(apiModelID, "gpt-4o") {
-			return 128000
-		}
-		if strings.Contains(apiModelID, "gpt-4") {
-			return 8192
-		}
-		if strings.Contains(apiModelID, "gpt-3.5") {
-			return 4096
-		}
-		return 4096 // Default fallback
+		return f.estimateOpenAITokens(apiModelID)
 	case types.BackendAnthropic:
-		// Anthropic models typically have large context windows
-		if strings.Contains(apiModelID, "claude-3-5") {
-			return 200000
-		}
-		if strings.Contains(apiModelID, "claude-3-7") {
-			return 8192
-		}
-		if strings.Contains(apiModelID, "claude-3") {
-			return 200000
-		}
-		if strings.Contains(apiModelID, "claude-2") {
-			return 100000
-		}
-		return 100000 // Default fallback
+		return f.estimateAnthropicTokens(apiModelID)
 	default:
 		return 4096 // Default fallback
 	}
+}
+
+// estimateOpenAITokens estimates tokens for OpenAI models
+func (f *ModelFetcher) estimateOpenAITokens(apiModelID string) int {
+	// OpenAI models have known context limits
+	if strings.Contains(apiModelID, "gpt-4o") {
+		return 128000
+	}
+	if strings.Contains(apiModelID, "gpt-4") {
+		return 8192
+	}
+	if strings.Contains(apiModelID, "gpt-3.5") {
+		return 4096
+	}
+	return 4096 // Default fallback
+}
+
+// estimateAnthropicTokens estimates tokens for Anthropic models
+func (f *ModelFetcher) estimateAnthropicTokens(apiModelID string) int {
+	// Anthropic models typically have large context windows
+	if strings.Contains(apiModelID, "claude-3-5") {
+		return 200000
+	}
+	if strings.Contains(apiModelID, "claude-3-7") {
+		return 8192
+	}
+	if strings.Contains(apiModelID, "claude-3") {
+		return 200000
+	}
+	if strings.Contains(apiModelID, "claude-2") {
+		return 100000
+	}
+	return 100000 // Default fallback
 }

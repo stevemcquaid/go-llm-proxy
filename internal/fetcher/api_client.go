@@ -68,7 +68,12 @@ func (c *APIClient) FetchAnthropicModels(ctx context.Context, apiKey string) ([]
 	if err != nil {
 		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			// Log the error but don't fail the function
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -104,7 +109,12 @@ func (c *APIClient) FetchOpenAIModels(ctx context.Context, apiKey string) ([]Ope
 	if err != nil {
 		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			// Log the error but don't fail the function
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

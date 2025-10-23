@@ -110,7 +110,12 @@ func (ab *AnthropicBackend) makeRequest(ctx context.Context, req AnthropicReques
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			// Log the error but don't fail the function
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
